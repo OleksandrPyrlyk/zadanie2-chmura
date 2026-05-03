@@ -2,7 +2,7 @@
 
 ## Autor
 
-Oleksandr Nazwisko
+Oleksandr Pyrlyk
 
 ## Część obowiązkowa
 
