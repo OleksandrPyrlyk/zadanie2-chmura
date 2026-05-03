@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Aplikacja pogodowa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef3f8;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 0 12px rgba(0,0,0,0.15);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #125aa0;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f1f8ff;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Pogoda</h1>
+
+    <label for="country">Wybierz kraj:</label>
+    <select id="country" onchange="updateCities()">
+        <option value="Polska">Polska</option>
+        <option value="Ukraina">Ukraina</option>
+        <option value="Niemcy">Niemcy</option>
+    </select>
+
+    <label for="city">Wybierz miasto:</label>
+    <select id="city"></select>
+
+    <button onclick="getWeather()">Sprawdź pogodę</button>
+
+    <div class="result" id="result">
+        Wybierz kraj i miasto, a następnie kliknij przycisk.
+    </div>
+</div>
+
+<script>
+    const cities = {
+        "Polska": ["Warszawa", "Kraków"],
+        "Ukraina": ["Kijów", "Lwów"],
+        "Niemcy": ["Berlin", "Monachium"]
+    };
+
+    function updateCities() {
+        const country = document.getElementById("country").value;
+        const citySelect = document.getElementById("city");
+
+        citySelect.innerHTML = "";
+
+        cities[country].forEach(city => {
+            const option = document.createElement("option");
+            option.value = city;
+            option.textContent = city;
+            citySelect.appendChild(option);
+        });
+    }
+
+    async function getWeather() {
+        const country = document.getElementById("country").value;
+        const city = document.getElementById("city").value;
+
+        const response = await fetch(`/api/weather?country=${country}&city=${city}`);
+        const data = await response.json();
+
+        if (data.error) {
+            document.getElementById("result").innerHTML = data.error;
+            return;
+        }
+
+        document.getElementById("result").innerHTML = `
+            <h3>${data.city}, ${data.country}</h3>
+            <p><b>Temperatura:</b> ${data.weather.temperature}</p>
+            <p><b>Opis:</b> ${data.weather.description}</p>
+            <p><b>Wilgotność:</b> ${data.weather.humidity}</p>
+            <p><b>Wiatr:</b> ${data.weather.wind}</p>
+        `;
+    }
+
+    updateCities();
+</script>
+
+</body>
+</html>
