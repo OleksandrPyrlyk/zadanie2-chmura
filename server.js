@@ -5,54 +5,50 @@ const PORT = process.env.PORT || 8080;
 
 const AUTHOR = "Oleksandr Pyrlyk";
 
-const weatherData = {
+const locations = {
     "Polska": {
-        "Warszawa": {
-            temperature: "18°C",
-            description: "Zachmurzenie umiarkowane",
-            humidity: "60%",
-            wind: "12 km/h"
-        },
-        "Kraków": {
-            temperature: "20°C",
-            description: "Słonecznie",
-            humidity: "55%",
-            wind: "9 km/h"
-        }
+        "Warszawa": { latitude: 52.2297, longitude: 21.0122 },
+        "Kraków": { latitude: 50.0647, longitude: 19.9450 }
     },
     "Ukraina": {
-        "Kijów": {
-            temperature: "21°C",
-            description: "Częściowe zachmurzenie",
-            humidity: "58%",
-            wind: "10 km/h"
-        },
-        "Lwów": {
-            temperature: "17°C",
-            description: "Lekki deszcz",
-            humidity: "72%",
-            wind: "14 km/h"
-        }
+        "Kijów": { latitude: 50.4501, longitude: 30.5234 },
+        "Lwów": { latitude: 49.8397, longitude: 24.0297 }
     },
     "Niemcy": {
-        "Berlin": {
-            temperature: "19°C",
-            description: "Pochmurno",
-            humidity: "63%",
-            wind: "11 km/h"
-        },
-        "Monachium": {
-            temperature: "16°C",
-            description: "Deszczowo",
-            humidity: "78%",
-            wind: "15 km/h"
-        }
+        "Berlin": { latitude: 52.5200, longitude: 13.4050 },
+        "Monachium": { latitude: 48.1351, longitude: 11.5820 }
     }
 };
 
+function getWeatherDescription(code) {
+    const descriptions = {
+        0: "Bezchmurnie",
+        1: "Głównie bezchmurnie",
+        2: "Częściowe zachmurzenie",
+        3: "Zachmurzenie całkowite",
+        45: "Mgła",
+        48: "Mgła osadzająca szadź",
+        51: "Lekka mżawka",
+        53: "Umiarkowana mżawka",
+        55: "Gęsta mżawka",
+        61: "Lekki deszcz",
+        63: "Umiarkowany deszcz",
+        65: "Intensywny deszcz",
+        71: "Lekki śnieg",
+        73: "Umiarkowany śnieg",
+        75: "Intensywny śnieg",
+        80: "Lekkie opady przelotne",
+        81: "Umiarkowane opady przelotne",
+        82: "Silne opady przelotne",
+        95: "Burza"
+    };
+
+    return descriptions[code] || "Nieznany stan pogody";
+}
+
 app.use(express.static("public"));
 
-app.get("/api/weather", (req, res) => {
+app.get("/api/weather", async (req, res) => {
     const country = req.query.country;
     const city = req.query.city;
 
@@ -62,19 +58,49 @@ app.get("/api/weather", (req, res) => {
         });
     }
 
-    const countryData = weatherData[country];
+    const countryData = locations[country];
 
     if (!countryData || !countryData[city]) {
         return res.status(404).json({
-            error: "Nie znaleziono danych pogodowych dla wybranej lokalizacji"
+            error: "Nie znaleziono lokalizacji"
         });
     }
 
-    res.json({
-        country,
-        city,
-        weather: countryData[city]
-    });
+    const { latitude, longitude } = countryData[city];
+
+    try {
+        const apiUrl =
+            `https://api.open-meteo.com/v1/forecast` +
+            `?latitude=${latitude}` +
+            `&longitude=${longitude}` +
+            `&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m` +
+            `&timezone=auto`;
+
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+            throw new Error("Błąd API pogodowego");
+        }
+
+        const data = await response.json();
+        const current = data.current;
+
+        res.json({
+            country,
+            city,
+            weather: {
+                temperature: `${current.temperature_2m}°C`,
+                description: getWeatherDescription(current.weather_code),
+                humidity: `${current.relative_humidity_2m}%`,
+                wind: `${current.wind_speed_10m} km/h`,
+                time: current.time
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: "Nie udało się pobrać aktualnej pogody z API"
+        });
+    }
 });
 
 app.listen(PORT, () => {
