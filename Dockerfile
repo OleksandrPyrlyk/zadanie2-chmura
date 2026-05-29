@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-alpine AS dependencies
+FROM node:22-alpine AS dependencies
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY package*.json ./
 RUN npm install --omit=dev && npm cache clean --force
 
 
-FROM node:20-alpine
+FROM node:22-alpine
 
 LABEL org.opencontainers.image.authors="Oleksandr Nazwisko"
 LABEL org.opencontainers.image.title="Aplikacja pogodowa - Zadanie 1"
