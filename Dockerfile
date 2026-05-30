@@ -25,6 +25,10 @@ COPY package*.json ./
 COPY server.js ./
 COPY public ./public
 
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm \
+    && rm -f /usr/local/bin/npx
+
 EXPOSE 8080
 
 USER node
